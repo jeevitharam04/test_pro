@@ -1,0 +1,237 @@
+openapi: 3.0.3
+info:
+  title: EduCare API
+  version: 0.1.0
+  description: Phase 1 API for authentication, tenant session management, school setup, and RBAC users.
+servers:
+  - url: http://localhost:3000/api
+  - url: http://localhost:3000/api/v1
+paths:
+  /v1/auth/signup:
+    post:
+      summary: Versioned school signup endpoint
+      responses:
+        "201":
+          description: Principal session created
+  /v1/auth/login:
+    post:
+      summary: Versioned login endpoint
+      responses:
+        "200":
+          description: Session created
+  /v1/classes:
+    get:
+      summary: List classes for the current tenant
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Classes returned
+    post:
+      summary: Create a class
+      security:
+        - cookieAuth: []
+      responses:
+        "201":
+          description: Class created
+  /v1/classes/{id}:
+    get:
+      summary: Get a class with subjects and students
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Class returned
+    patch:
+      summary: Update a class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Class updated
+    delete:
+      summary: Soft delete a class
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Class deleted
+  /v1/subjects:
+    get:
+      summary: List subjects for the current tenant
+      parameters:
+        - name: classId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Subjects returned
+    post:
+      summary: Create a subject
+      responses:
+        "201":
+          description: Subject created
+  /v1/subjects/{id}:
+    get:
+      summary: Get a subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Subject returned
+    patch:
+      summary: Update a subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Subject updated
+    delete:
+      summary: Soft delete a subject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Subject deleted
+  /auth/signup:
+    post:
+      summary: Create a school and principal user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignupRequest"
+      responses:
+        "201":
+          description: Principal session created
+  /auth/login:
+    post:
+      summary: Login with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Session created
+        "423":
+          description: Account locked after five failed attempts
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and issue a new access token
+      responses:
+        "200":
+          description: Session refreshed
+  /auth/logout:
+    post:
+      summary: Revoke the current refresh token
+      responses:
+        "200":
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Return the current JWT session claims
+      responses:
+        "200":
+          description: Current user session
+  /schools/current:
+    get:
+      summary: Return the current tenant school overview
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: School overview
+    patch:
+      summary: Update current school settings
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: School updated
+  /users:
+    get:
+      summary: List users in the current school
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Users in tenant
+    post:
+      summary: Create a tenant user
+      security:
+        - cookieAuth: []
+      responses:
+        "201":
+          description: User created
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: educare_access
+  schemas:
+    SignupRequest:
+      type: object
+      required: [schoolName, schoolSlug, name, email, password]
+      properties:
+        schoolName:
+          type: string
+        schoolSlug:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          format: password
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password

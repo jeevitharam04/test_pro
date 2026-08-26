@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: EduCare API
+  version: 0.1.0
+  description: Phase 1 API for authentication, tenant sessions, school setup, and users.
+servers:
+  - url: http://localhost:3000/api
+paths:
+  /v1/classes:
+    get:
+      summary: List classes
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create class
+      responses:
+        "201":
+          description: Created
+  /v1/subjects:
+    get:
+      summary: List subjects
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create subject
+      responses:
+        "201":
+          description: Created
+  /auth/signup:
+    post:
+      summary: Create a school and principal user
+      responses:
+        "201":
+          description: Principal session created
+  /auth/login:
+    post:
+      summary: Login with email and password
+      responses:
+        "200":
+          description: Session created
+        "423":
+          description: Account locked
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and issue a new access token
+      responses:
+        "200":
+          description: Session refreshed
+  /auth/logout:
+    post:
+      summary: Revoke the current refresh token
+      responses:
+        "200":
+          description: Logged out
+  /auth/me:
+    get:
+      summary: Return current JWT session claims
+      responses:
+        "200":
+          description: Current user session
+  /schools/current:
+    get:
+      summary: Return current tenant school overview
+      responses:
+        "200":
+          description: School overview
+    patch:
+      summary: Update current school settings
+      responses:
+        "200":
+          description: School updated
+  /users:
+    get:
+      summary: List users in the current school
+      responses:
+        "200":
+          description: Users in tenant
+    post:
+      summary: Create a tenant user
+      responses:
+        "201":
+          description: User created
