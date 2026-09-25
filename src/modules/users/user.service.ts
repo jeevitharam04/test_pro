@@ -1,5 +1,6 @@
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/infrastructure/prisma/client";
+import { ensureSchoolCanAddUser } from "@/modules/schools/subscription.service";
 import { hashPassword } from "@/shared/auth/password";
 
 export function listUsers(schoolId: string) {
@@ -26,6 +27,8 @@ export async function createSchoolUser(input: {
   role: UserRole;
   password: string;
 }) {
+  await ensureSchoolCanAddUser(input.schoolId, input.role);
+
   return prisma.user.create({
     data: {
       schoolId: input.schoolId,

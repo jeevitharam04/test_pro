@@ -4,6 +4,8 @@ import { requireTenantSession } from "@/shared/auth/session";
 import { LogoutButton } from "./logout-button";
 import { CampusBot } from "./campus-bot";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await requireTenantSession();
 

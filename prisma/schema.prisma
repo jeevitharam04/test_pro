@@ -53,6 +53,18 @@ enum PaymentStatus {
   REFUNDED
 }
 
+enum PrivacyRequestType {
+  ACCESS
+  DELETION
+}
+
+enum PrivacyRequestStatus {
+  OPEN
+  IN_REVIEW
+  COMPLETED
+  REJECTED
+}
+
 model School {
   id                       String          @id @default(uuid()) @db.Uuid
   name                     String
@@ -64,8 +76,8 @@ model School {
   subscriptionPlan         String          @default("starter")
   attendanceMode           AttendanceMode  @default(DAILY)
   gradingConfig            Json?
-  presentAdditionPercent   Decimal         @default(100) @db.Decimal(5, 2)
-  absentDeductionPercent   Decimal         @default(0) @db.Decimal(5, 2)
+  presentAdditionPercent   Decimal         @default(2) @db.Decimal(5, 2)
+  absentDeductionPercent   Decimal         @default(2) @db.Decimal(5, 2)
   leavePercentChange       Decimal         @default(0) @db.Decimal(5, 2)
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
@@ -88,6 +100,8 @@ model School {
   announcements            Announcement[]
   behaviorLogs             BehaviorLog[]
   auditLogs                AuditLog[]
+    invitations              Invitation[]
+  privacyRequests          PrivacyRequest[]
 
   @@index([slug])
   @@index([deletedAt])
@@ -110,13 +124,49 @@ model User {
   updatedAt          DateTime      @updatedAt
   deletedAt          DateTime?
   refreshTokens      RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  createdInvitations Invitation[] @relation("InvitationCreator")
   teacher            Teacher?
   parent             Parent?
   student            Student?
   auditLogs          AuditLog[]
+  privacyRequests    PrivacyRequest[]
 
   @@index([schoolId, role])
   @@index([deletedAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+}
+
+model Invitation {
+  id              String    @id @default(uuid()) @db.Uuid
+  schoolId        String    @db.Uuid
+  school          School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdByUserId String    @db.Uuid
+  createdBy       User      @relation("InvitationCreator", fields: [createdByUserId], references: [id])
+  email           String
+  name            String
+  phone           String?
+  role            UserRole
+  classId         String?   @db.Uuid
+  studentId       String?   @db.Uuid
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([schoolId, email, acceptedAt])
+  @@index([tokenHash, expiresAt])
 }
 
 model RefreshToken {
@@ -446,6 +496,7 @@ model StudentDocument {
   name        String
   fileUrl     String
   mimeType    String
+  fileSizeBytes Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
@@ -505,4 +556,22 @@ model AuditLog {
 
   @@index([schoolId, createdAt])
   @@index([actorUserId])
+}
+
+model PrivacyRequest {
+  id          String               @id @default(uuid()) @db.Uuid
+  schoolId    String               @db.Uuid
+  school      School               @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  requesterId String               @db.Uuid
+  requester   User                 @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  type        PrivacyRequestType
+  status      PrivacyRequestStatus @default(OPEN)
+  note        String?
+  reviewedById String?             @db.Uuid
+  reviewedAt  DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([schoolId, status, createdAt])
+  @@index([requesterId, createdAt])
 }

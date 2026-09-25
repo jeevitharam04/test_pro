@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: Params) {
     if (!session?.schoolId) return fail("Unauthenticated", 401);
     assertPermission(session.role, "homework", "read");
     const { id } = await params;
-    return created(await submitHomework(session.schoolId, id, homeworkSubmissionSchema.parse(await request.json())));
+    return created(await submitHomework(session.schoolId, id, session.userId, homeworkSubmissionSchema.parse(await request.json())));
   } catch (error) {
     return handleApiError(error);
   }

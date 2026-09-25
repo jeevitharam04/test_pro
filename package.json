@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "worker": "tsx src/jobs/notifications.worker.ts",
     "start:prod": "prisma migrate deploy && prisma generate && next start",
     "lint": "eslint .",
     "test": "jest --runInBand",
@@ -60,5 +61,23 @@
     "ts-jest": "^29.4.5",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
-  }
+  },
+  "description": "EduCare is a multi-tenant school management SaaS platform for Indian schools. This workspace starts with Phase 1 from the project prompt: authentication, multi-tenant architecture, RBAC, database schema, and the initial dashboards/API documentation surface.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jeevitharam04/test_pro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jeevitharam04/test_pro/issues"
+  },
+  "homepage": "https://github.com/jeevitharam04/test_pro#readme"
 }

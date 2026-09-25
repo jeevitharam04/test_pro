@@ -2,6 +2,8 @@ import { prisma } from "@/infrastructure/prisma/client";
 import { getRedisClient } from "@/infrastructure/redis/client";
 import { ok } from "@/shared/http/responses";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const checks = {
     app: "ok",

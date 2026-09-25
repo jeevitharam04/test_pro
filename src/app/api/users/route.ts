@@ -1,17 +1,16 @@
 import { UserRole } from "@prisma/client";
 import { z } from "zod";
-import { createSchoolUser, listUsers } from "@/modules/users/user.service";
+import { listUsers } from "@/modules/users/user.service";
+import { createInvitation } from "@/modules/auth/invitation.service";
 import { getSession } from "@/shared/auth/session";
 import { fail, handleApiError, ok, created } from "@/shared/http/responses";
 import { assertPermission } from "@/shared/rbac/permissions";
-import { prisma } from "@/infrastructure/prisma/client";
 
 const createUserSchema = z.object({
   email: z.string().email().toLowerCase(),
   name: z.string().min(2).max(120),
   phone: z.string().min(8).max(20).optional(),
-  role: z.enum([UserRole.PRINCIPAL, UserRole.TEACHER, UserRole.PARENT, UserRole.STUDENT]),
-  password: z.string().min(8).max(100).default("Password@123"),
+  role: z.enum([UserRole.TEACHER, UserRole.PARENT, UserRole.STUDENT]),
   employeeCode: z.string().max(40).optional()
 });
 
@@ -38,12 +37,7 @@ export async function POST(request: Request) {
 
     assertPermission(session.role, "users", "manage");
     const input = createUserSchema.parse(await request.json());
-    const user = await createSchoolUser({ ...input, schoolId: session.schoolId });
-    if (input.role === UserRole.TEACHER) {
-      const teacherCount = await prisma.teacher.count({ where: { schoolId: session.schoolId } });
-      await prisma.teacher.create({ data: { schoolId: session.schoolId, userId: user.id, employeeCode: input.employeeCode || `FAC-${String(teacherCount + 1).padStart(4, "0")}` } });
-    }
-    return created(user);
+    return created(await createInvitation({ ...input, schoolId: session.schoolId, createdByUserId: session.userId }));
   } catch (error) {
     return handleApiError(error);
   }

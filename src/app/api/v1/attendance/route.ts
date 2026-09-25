@@ -1,4 +1,4 @@
-import { listAttendance, markBulkAttendance } from "@/modules/attendance/attendance-crud.service";
+import { listAttendance, markBulkAttendance } from "@/modules/attendance/attendance-crud";
 import { getSession } from "@/shared/auth/session";
 import { created, fail, handleApiError, ok } from "@/shared/http/responses";
 import { assertPermission } from "@/shared/rbac/permissions";
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     if (!session?.schoolId) return fail("Unauthenticated", 401);
     assertPermission(session.role, "attendance", "manage");
     const input = bulkAttendanceSchema.parse(await request.json());
-    return created(await markBulkAttendance(session.schoolId, session.userId, input));
+    return created(await markBulkAttendance(session.schoolId, session.userId, session.role, input));
   } catch (error) {
     return handleApiError(error);
   }

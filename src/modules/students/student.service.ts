@@ -1,6 +1,7 @@
 import { UserRole } from "@prisma/client";
 import { randomBytes } from "node:crypto";
 import { prisma } from "@/infrastructure/prisma/client";
+import { ensureSchoolCanAddUser } from "@/modules/schools/subscription.service";
 import { hashPassword } from "@/shared/auth/password";
 
 const defaultPassword = "Password@123";
@@ -35,6 +36,8 @@ export async function createStudent(
   },
   actorUserId: string
 ) {
+  await ensureSchoolCanAddUser(schoolId, UserRole.STUDENT);
+
   return prisma.$transaction(async (tx) => {
     const studentUser = input.email
       ? await tx.user.create({

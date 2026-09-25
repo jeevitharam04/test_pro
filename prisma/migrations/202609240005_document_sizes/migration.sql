@@ -1,0 +1,1 @@
+ALTER TABLE "StudentDocument" ADD COLUMN "fileSizeBytes" INTEGER NOT NULL DEFAULT 0;

@@ -1,5 +1,7 @@
 import { UserRole } from "@prisma/client";
+import { randomBytes } from "crypto";
 import { prisma } from "@/infrastructure/prisma/client";
+import { enqueueNotification } from "@/infrastructure/queues/notifications";
 import { clearAuthCookies, REFRESH_TOKEN_COOKIE, setAuthCookies } from "@/shared/auth/cookies";
 import { hashPassword, verifyPassword } from "@/shared/auth/password";
 import {
@@ -11,6 +13,74 @@ import {
 
 const maxFailedAttempts = 5;
 const lockMinutes = 15;
+const resetTokenMinutes = 30;
+
+export async function requestPasswordReset(email: string) {
+  const user = await prisma.user.findFirst({ where: { email, deletedAt: null } });
+  if (!user) return;
+
+  const token = randomBytes(32).toString("hex");
+  await prisma.$transaction([
+    prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() }
+    }),
+    prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: hashToken(token),
+        expiresAt: new Date(Date.now() + resetTokenMinutes * 60 * 1000)
+      }
+    })
+  ]);
+
+  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  if (user.schoolId) {
+    await enqueueNotification({
+      schoolId: user.schoolId,
+      userId: user.id,
+      channel: "EMAIL",
+      to: user.email,
+      title: "Reset your EduCare password",
+      body: [
+        `Hello ${user.name},`,
+        "",
+        `Use this link to reset your password: ${appUrl}/reset-password?token=${token}`,
+        `This link expires in ${resetTokenMinutes} minutes and can only be used once.`,
+        "",
+        "If you did not request this, you can ignore this email."
+      ].join("\n")
+    });
+  }
+
+  return process.env.NODE_ENV === "development" ? token : undefined;
+}
+
+export async function resetPassword(token: string, password: string) {
+  const reset = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(token) }
+  });
+
+  if (!reset || reset.usedAt || reset.expiresAt <= new Date()) {
+    throw new AuthError("Invalid or expired password reset token", 400);
+  }
+
+  const passwordHash = await hashPassword(password);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: reset.userId },
+      data: { passwordHash, failedLoginCount: 0, lockedUntil: null }
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: reset.id },
+      data: { usedAt: new Date() }
+    }),
+    prisma.refreshToken.updateMany({
+      where: { userId: reset.userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    })
+  ]);
+}
 
 export async function signupPrincipal(input: {
   schoolName: string;

@@ -9,6 +9,9 @@ export function getSchoolOverview(schoolId: string) {
       slug: true,
       subscriptionPlan: true,
       attendanceMode: true,
+      presentAdditionPercent: true,
+      absentDeductionPercent: true,
+      leavePercentChange: true,
       _count: {
         select: {
           users: true,
@@ -27,6 +30,9 @@ export function updateSchoolSettings(
     name?: string;
     attendanceMode?: "DAILY" | "SUBJECT_WISE" | "SESSION_WISE";
     subscriptionPlan?: string;
+    presentAdditionPercent?: number;
+    absentDeductionPercent?: number;
+    leavePercentChange?: number;
   }
 ) {
   return prisma.school.update({
