@@ -1,0 +1,144 @@
+EduCare Software Completion Status and Handoff Plan
+====================================================
+
+Date: 2026-09-25
+Project: EduCare / EduCore School Management SaaS
+Repository: https://github.com/jeevitharam04/test_pro
+
+Purpose
+-------
+This document describes what is implemented in the software project, what remains before a full production launch, and how each remaining software item can be completed. Hardware-only requirements such as face-recognition cameras, biometric/thumb-print devices, and physical attendance terminals are intentionally excluded from the software completion scope.
+
+Current verified state
+----------------------
+The project is a working Next.js + Prisma + PostgreSQL + Redis application.
+
+Verified during the latest development cycle:
+- PostgreSQL and Redis can be run with Docker Compose.
+- Prisma migrations and seed data are available.
+- Authentication, password reset, refresh sessions, lockout, RBAC, and invitation onboarding are implemented.
+- School tenant scoping and service-level ownership checks are implemented.
+- Attendance, marks, homework, fees, announcements, timetable, reports, and dashboard routes exist.
+- Attendance configuration supports daily, subject-wise, and session-wise modes.
+- Notification queue and worker infrastructure exists for email/SMS providers.
+- Razorpay webhook signature verification exists.
+- Subscription plans, student/teacher capacity, SMS limits, storage limits, plan catalog, and usage reporting exist.
+- Privacy export, privacy requests, deletion anonymization, audit logging, and CSV marks/attendance exports exist.
+- Docker Compose, production Dockerfile, health checks, migrations, and seed scripts exist.
+- Latest validation completed with tests passing, lint passing, and production build completing successfully when Docker/PostgreSQL is available.
+
+Software requirements still pending
+-----------------------------------
+1. Database-native row-level security (highest priority)
+   Current state: API/service queries include school_id checks.
+   Needed: PostgreSQL RLS policies for every tenant-owned table, a restricted application database role, and transaction/session tenant context such as app.school_id.
+   Completion approach:
+   - Add a Prisma migration enabling RLS on every tenant table.
+   - Add policies using current_setting('app.school_id', true).
+   - Set the tenant value at the start of every request transaction.
+   - Add cross-school integration tests using two schools and a non-owner database role.
+   - Verify direct SQL cannot bypass tenant isolation.
+
+2. Real subscription billing lifecycle
+   Current state: plan catalog, limits, and usage checks exist.
+   Needed: subscription records, payment-provider subscription IDs, checkout, upgrade/downgrade, renewal, cancellation, grace period, failed-payment handling, invoices, and webhook reconciliation.
+   Completion approach:
+   - Add Subscription, Invoice, and BillingEvent models.
+   - Implement Razorpay subscription/order APIs with idempotency keys.
+   - Verify every webhook signature and persist event IDs to prevent replay.
+   - Change plan only after verified payment state.
+   - Add billing admin screens and integration tests using provider test credentials.
+
+3. Complete report-card and PDF workflow
+   Current state: student progress reports and CSV marks/attendance exports exist.
+   Needed: configurable report-card layout, PDF generation, download permissions, and parent email delivery.
+   Completion approach:
+   - Add a server-side PDF library or HTML-to-PDF service.
+   - Build a report-card template using school grading configuration.
+   - Add principal/teacher authorization and audit records for generation.
+   - Add signed, expiring download URLs and email attachments/links.
+
+4. Complete document storage lifecycle
+   Current state: signed upload URL endpoint and storage quota checks exist.
+   Needed: real S3/Supabase upload integration, document records, ownership checks, download URLs, deletion, cleanup, and virus/content validation.
+   Completion approach:
+   - Configure an object-storage provider in production.
+   - Persist StudentDocument records after successful upload.
+   - Verify school and student ownership on upload/download/delete.
+   - Add lifecycle cleanup for deleted records and failed uploads.
+   - Keep credentials server-side and use 15-minute signed URLs.
+
+5. Complete attendance operations
+   Current state: bulk marking, configurable calculation, ownership checks, and absence SMS queueing exist.
+   Needed: CSV import, calendar UI, shortage alerts, configurable alert thresholds, and operational retry/reporting.
+   Completion approach:
+   - Add validated CSV upload with row-level error reporting.
+   - Add calendar and class summary screens.
+   - Add a scheduled job for shortage detection.
+   - Enforce the monthly SMS quota before queueing alerts.
+
+6. Complete homework notification lifecycle
+   Current state: homework and submissions are represented and notification infrastructure exists.
+   Needed: scheduled reminders, overdue notifications, teacher grading UI, parent delivery preferences, and provider delivery status.
+   Completion approach:
+   - Add scheduled BullMQ jobs for deadline reminders and overdue items.
+   - Make jobs idempotent by homework/student/event key.
+   - Add grading and feedback forms with teacher ownership checks.
+   - Persist provider message IDs and retry outcomes.
+
+7. Privacy retention and compliance operations
+   Current state: personal export, access/deletion requests, anonymization, and audit records exist.
+   Needed: retention schedules, legal holds, consent/preferences, data processor records, breach workflow, and administrator reporting.
+   Completion approach:
+   - Define retention periods by data category.
+   - Add scheduled anonymization jobs with dry-run mode.
+   - Add consent and notification-preference records.
+   - Add incident/breach records and an administrator workflow.
+   - Obtain legal review for DPDP Act/GDPR policies before production claims.
+
+8. Backup, monitoring, and deployment operations
+   Current state: Docker Compose, health endpoint, Sentry hooks, and runbook foundations exist.
+   Needed: automated backups, restore drills, uptime monitoring, alerting, CI/CD, secret management, and production deployment.
+   Completion approach:
+   - Configure daily PostgreSQL backups with 30-day retention in two locations.
+   - Test restore monthly and record the result.
+   - Add CI checks for lint, tests, migrations, and build.
+   - Configure Sentry/APM, uptime checks, logs, and alerts.
+   - Deploy with managed PostgreSQL/Redis, TLS, managed secrets, and a separate worker.
+
+Hardware exclusions
+-------------------
+The following are intentionally not required for software completion:
+- Face-recognition camera/device integration.
+- AWS Rekognition production enrollment and camera capture.
+- Thumb-print or biometric terminal integration.
+- Physical attendance terminals and device drivers.
+
+The software should keep provider/device interfaces isolated so these can be added later without changing school, student, or attendance business rules.
+
+Recommended completion order
+----------------------------
+1. PostgreSQL RLS and isolation integration tests.
+2. Billing lifecycle and webhook reconciliation.
+3. Production object storage and document lifecycle.
+4. PDF report cards and parent delivery.
+5. Attendance/homework scheduled workflows.
+6. Privacy retention and breach operations.
+7. CI/CD, backups, monitoring, restore drills, and deployment.
+
+Production prerequisites
+-----------------------
+Before calling the system production-ready, provide:
+- A managed PostgreSQL database.
+- A managed Redis instance.
+- Razorpay production/test credentials.
+- Email provider credentials such as Resend.
+- SMS provider credentials such as MSG91.
+- S3-compatible storage credentials and bucket.
+- A Sentry DSN or equivalent monitoring service.
+- A deployment host and DNS/TLS ownership.
+- Legal approval for privacy notices, retention, and DPDP/GDPR language.
+
+Important security note
+----------------------
+Never publish .env, production credentials, JWT secrets, database passwords, provider tokens, or private keys. Rotate all local/demo credentials before production. Docker credentials may be supplied by an operator through Docker Desktop login or environment variables; they must not be written into the project zip.

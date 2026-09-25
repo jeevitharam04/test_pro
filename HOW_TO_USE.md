@@ -4,6 +4,37 @@ This guide explains how to run and use EduCore when you have the project source 
 
 EduCore is a role-based institution management application built with Next.js, Prisma, PostgreSQL, Redis, and Docker. It supports Principal/Admin, Faculty, Parent, and Student dashboards.
 
+## 0. Using the Project ZIP
+
+When you receive the project ZIP, extract it to a local folder first. Do not run the project from inside the ZIP viewer.
+
+The ZIP should contain source code, Prisma migrations, Docker files, tests, and documentation. It intentionally does not contain `node_modules`, `.next`, `.git`, `.env`, production secrets, or the old `.github.zip` archive.
+
+You need to install:
+
+- Docker Desktop with Linux containers enabled
+- Node.js 20 or later
+- npm, included with Node.js
+- Git is optional when using the ZIP; it is only needed for GitHub updates
+
+Docker Desktop login is optional for this project because the public `postgres` and `redis` images can be pulled anonymously. If your organization requires Docker Hub authentication, sign in to Docker Desktop with your own account before running Docker commands. Never put Docker passwords or tokens in this project.
+
+The complete first-time setup is:
+
+```powershell
+cd "C:\path\to\extracted\test_pro"
+Copy-Item .env.example .env
+npm install
+docker compose up -d postgres redis
+docker compose ps
+npm run setup:local
+npm run dev
+```
+
+Then open `http://localhost:3000/login`.
+
+For an existing installation, use `docker compose up -d postgres redis`, `npm run prisma:deploy`, and `npm run dev`. Do not run the seed command against a production database.
+
 ## 1. Requirements
 
 Install the following before starting:
@@ -29,7 +60,13 @@ Install dependencies:
 npm install
 ```
 
-The project already contains a `.env` file for local development. If it does not exist, create it with values based on `.env.example` or the project setup documentation.
+The ZIP does not include a real `.env` file. Create one from the template:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The local template values are suitable only for local Docker development. Replace secrets and provider values before deployment.
 
 ## 3. Start the Database and Redis
 
@@ -69,7 +106,7 @@ npm run prisma:seed
 
 The seed creates demo users, faculty, students, parents, Engineering branches, subjects, marks, and linked parent/student accounts.
 
-For a complete local setup, this command can also be used:
+For a complete local setup, this command can also be used after `npm install` and `docker compose up -d postgres redis`:
 
 ```powershell
 npm run setup:local
@@ -293,7 +330,19 @@ Before production, also configure payment, email, SMS, storage, and monitoring c
 
 Do not expose the local PostgreSQL port publicly and do not use the development JWT secret in production.
 
-## 15. Troubleshooting
+## 15. Software Scope and Pending Work
+
+Hardware integrations are intentionally excluded from this software delivery. Face-recognition cameras, biometric/thumb-print terminals, and physical attendance devices are future integrations.
+
+For the complete software status, pending requirements, completion approach, production prerequisites, and hardware exclusions, read:
+
+```text
+SOFTWARE_STATUS_AND_COMPLETION_PLAN.txt
+```
+
+The current project is a working MVP with authentication, tenant-scoped modules, attendance, marks, homework, fees, notifications, reports, exports, subscription limits, privacy workflows, storage quota enforcement, Docker services, migrations, and seed data. The remaining production work is documented in that file.
+
+## 16. Troubleshooting
 
 ### Dashboard says unauthenticated
 
